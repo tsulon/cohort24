@@ -1,9 +1,8 @@
-# aqi_bar_chart_from_csv.R
-
+# aqi_comparison_bar_chart.R
 # -------------------------------
 # 1. Load Libraries
 # -------------------------------
-library(tidyverse)   # includes readr, ggplot2, dplyr, tidyr
+library(tidyverse)   # includes readr, dplyr, tidyr, ggplot2
 
 # -------------------------------
 # 2. Collecting Data
@@ -17,40 +16,56 @@ AQI_raw <- read_csv("Nigeria AQI Data.csv")
 # -------------------------------
 AQI_data <- AQI_raw %>%
   rename(
-    city = City,
-    AQI  = AQI
+    state = City,
+    current_AQI = AQI
   ) %>%
-  select(city, AQI) %>%
-  filter(!is.na(AQI)) %>%
-  mutate(city = as.factor(city))
+  select(state, current_AQI) %>%
+  filter(!is.na(current_AQI)) %>%
+  mutate(
+    state = as.factor(state),
+    # Project AQI 20 years ahead by applying a 17% increase
+    projected_AQI = round(current_AQI * 1.17)
+  )
 
 # -------------------------------
-# 4. Exploratory Data Analysis (EDA)
+# 4. Reshape for Plotting
 # -------------------------------
-# Bar Chart: Average AQI by City
-avg_aqi <- AQI_data %>%
-  group_by(city) %>%
-  summarize(avg_AQI = mean(AQI, na.rm = TRUE))
+# Pivot longer so we can plot current vs projected side by side
+plot_data <- AQI_data %>%
+  pivot_longer(
+    cols = c(current_AQI, projected_AQI),
+    names_to  = "type",
+    values_to = "AQI_value"
+  ) %>%
+  mutate(
+    type = recode(type,
+                  current_AQI   = "Current AQI",
+                  projected_AQI = "Projected AQI (2045)"))
 
-plot_avg_aqi_bar <- ggplot(avg_aqi, aes(x = city, y = avg_AQI)) +
-  geom_col(fill = "red") +
+# -------------------------------
+# 5. Plotting Bar Chart
+# -------------------------------
+plot_comparison <- ggplot(plot_data, aes(x = AQI_value, y = state, fill = type)) +
+  geom_col(position = position_dodge(width = 0.8)) +
   labs(
-    title = "Average Air Quality Index by City",
-    x     = "City",
-    y     = "Average AQI"
+    title = "Current vs Projected AQI by State",
+    x     = "Air Quality Index (AQI)",
+    y     = "State",
+    fill  = "AQI Type"
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(size = 16, face = "bold"),
-    axis.title = element_text(size = 14),
-    axis.text  = element_text(size = 12)
+    plot.title    = element_text(size = 16, face = "bold"),
+    axis.title    = element_text(size = 14),
+    axis.text     = element_text(size = 12),
+    legend.title  = element_text(size = 13),
+    legend.text   = element_text(size = 12)
   )
 
 # Display the bar chart
-print(plot_avg_aqi_bar)
+print(plot_comparison)
 
 # -------------------------------
-# 5. Deploying Final Visualization
+# 6. Save the Plot
 # -------------------------------
-# Save the bar chart to file
-# ggsave("Average_AQI_by_city.png", plot_avg_aqi_bar, width = 10, height = 6, dpi = 300)
+# ggsave("AQI_Current_vs_Projected.png", plot_comparison, width = 10, height = 6, dpi = 300)
