@@ -1,16 +1,20 @@
 # aqi_bar_chart_from_csv.R
 
 # -------------------------------
-# 1. Collecting Data
+# 1. Load Libraries
+# -------------------------------
+library(tidyverse)   # includes readr, ggplot2, dplyr, tidyr
+
+# -------------------------------
+# 2. Collecting Data
 # -------------------------------
 # Read AQI data from CSV (ensure the file path is correct)
 # CSV must contain: City, AQI
 AQI_raw <- read_csv("Nigeria AQI Data.csv")
 
 # -------------------------------
-# 2. Cleaning & Preparing Data
+# 3. Cleaning & Preparing Data
 # -------------------------------
-library(tidyverse)   # includes ggplot2, dplyr, tidyr
 AQI_data <- AQI_raw %>%
   rename(
     city = City,
@@ -21,7 +25,7 @@ AQI_data <- AQI_raw %>%
   mutate(city = as.factor(city))
 
 # -------------------------------
-# 3. Exploratory Data Analysis (EDA)
+# 4. Exploratory Data Analysis (EDA)
 # -------------------------------
 # Bar Chart: Average AQI by City
 avg_aqi <- AQI_data %>%
@@ -46,7 +50,7 @@ plot_avg_aqi_bar <- ggplot(avg_aqi, aes(x = city, y = avg_AQI)) +
 print(plot_avg_aqi_bar)
 
 # -------------------------------
-# 4. Deploying Final Visualization
+# 5. Deploying Final Visualization
 # -------------------------------
 # Save the bar chart to file
 # ggsave("Average_AQI_by_city.png", plot_avg_aqi_bar, width = 10, height = 6, dpi = 300)
