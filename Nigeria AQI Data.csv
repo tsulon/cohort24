@@ -1,0 +1,12 @@
+City,AQI,Status,PM2.5 (µg/m³),PM10 (µg/m³),Temperature (°C),Humidity (%)
+Borno,23,Good,4,20,19,59
+Cross River,18,Good,3,19,14,59
+Delta,21,Good,4,18,15,58
+Edo,22,Good,4,20,18,61
+Federal Capital Territory,21,Good,4,19,21,69
+Kano,18,Good,3,19,20,60
+Kebbi,24,Good,4,17,19,58
+Kwara,22,Good,4,17,19,67
+Lagos,21,Good,4,18,15,58
+Osun,23,Good,4,17,19,64
+Rivers,21,Good,4,19,14,59
