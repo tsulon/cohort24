@@ -1,0 +1,33 @@
+# 1. Load libraries
+library(ggplot2)
+
+# 2. Generate sample data
+set.seed(42)
+n <- 200
+df <- data.frame(
+  Date       = seq.Date(as.Date("2023-01-01"), by = "week", length.out = n),
+  Product    = sample(c("Gadget", "Widget", "Doohickey"), n, replace = TRUE),
+  Units_Sold = rpois(n, lambda = 20),
+  Revenue    = round(rnorm(n, mean = 300, sd = 80), 0)
+)
+
+# 3. Quick look
+head(df)
+#    Date      Product Units_Sold Revenue
+# 1 2023-01-01  Widget         20     290
+# 2 2023-01-08 Doohickey       22     360
+# …
+
+# 4. Visualize:  
+#    Scatter of Revenue vs. Units Sold, colored by Product,  
+#    with a smooth trend line for each product
+ggplot(df, aes(x = Units_Sold, y = Revenue, color = Product)) +
+  geom_point(alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title    = "Revenue vs. Units Sold by Product",
+    subtitle = "With linear trend lines",
+    x        = "Units Sold",
+    y        = "Revenue (USD)"
+  ) +
+  theme_minimal(base_size = 14)
