@@ -1,61 +1,52 @@
-# 1. Load libraries
-install.packages(c("tidyverse","lubridate","forecast","scales"))
-library(tidyverse); library(lubridate); library(forecast); library(scales)
+# aqi_bar_chart_from_csv.R
 
-# 2. Read CSV
-aqi_raw <- read_csv("data.csv")  
-# 3. Clean & aggregate
-aqi <- aqi_raw %>%
-  mutate(Date = ymd(Date)) %>%
-  select(Date, PM2.5, PM10) %>%
-  group_by(Date) %>%
-  summarize(pm25 = mean(PM2.5, na.rm=TRUE),
-            pm10 = mean(PM10, na.rm=TRUE)) %>%
-  ungroup()
+# -------------------------------
+# 1. Collecting Data
+# -------------------------------
+# Read AQI data from CSV (ensure the file path is correct)
+# CSV must contain: City, AQI
+AQI_raw <- read_csv("Nigeria AQI Data.csv")
 
-# 4. Define breakpoints and AQI function (US-EPA)
-bp_pm25 <- tibble(
-  C_low  = c(0.0, 12.1, 35.5, 55.5, 150.5, 250.5),
-  C_high = c(12.0,35.4,55.4,150.4,250.4,500.4),
-  I_low  = c(0,50,100,150,200,300),
-  I_high = c(50,100,150,200,300,400)
-)
-calc_aqi <- function(Cp, bp){
-  row <- bp %>% filter(Cp >= C_low & Cp <= C_high)
-  with(row, ((I_high - I_low)/(C_high - C_low))*(Cp - C_low) + I_low)
-}
+# -------------------------------
+# 2. Cleaning & Preparing Data
+# -------------------------------
+library(tidyverse)   # includes ggplot2, dplyr, tidyr
+AQI_data <- AQI_raw %>%
+  rename(
+    city = City,
+    AQI  = AQI
+  ) %>%
+  select(city, AQI) %>%
+  filter(!is.na(AQI)) %>%
+  mutate(city = as.factor(city))
 
-# 5. Compute AQI
-aqi <- aqi %>%
-  mutate(aqi_pm25 = map_dbl(pm25, ~calc_aqi(.x, bp=bp_pm25)),
-         aqi_pm10 = map_dbl(pm10, ~calc_aqi(.x, bp=bp_pm25)),
-         AQI       = pmax(aqi_pm25, aqi_pm10, na.rm=TRUE))
+# -------------------------------
+# 3. Exploratory Data Analysis (EDA)
+# -------------------------------
+# Bar Chart: Average AQI by City
+avg_aqi <- AQI_data %>%
+  group_by(city) %>%
+  summarize(avg_AQI = mean(AQI, na.rm = TRUE))
 
-# 6. Forecast
-aqi_ts <- ts(aqi$AQI, frequency=365, start=c(year(min(aqi$Date)), yday(min(aqi$Date))))
-model <- auto.arima(aqi_ts)
-fcast <- forecast(model, h=365)
-
-# 7. Prepare forecast frame
-fcast_df <- tibble(
-  Date     = seq(max(aqi$Date) + days(1), by="day", length.out=365),
-  Forecast = as.numeric(fcast$mean),
-  Lo80     = fcast$lower[,"80%"],
-  Hi80     = fcast$upper[,"80%"],
-  Lo95     = fcast$lower[,"95%"],
-  Hi95     = fcast$upper[,"95%"]
-)
-
-# 8. Plot with ggplot2
-ggplot() +
-  geom_line(data=aqi, aes(x=Date, y=AQI), color="steelblue") +
-  geom_line(data=fcast_df, aes(x=Date, y=Forecast), color="firebrick", linetype="dashed") +
-  geom_ribbon(data=fcast_df, aes(x=Date, ymin=Lo95, ymax=Hi95), fill="pink", alpha=0.2) +
-  geom_ribbon(data=fcast_df, aes(x=Date, ymin=Lo80, ymax=Hi80), fill="salmon", alpha=0.3) +
+plot_avg_aqi_bar <- ggplot(avg_aqi, aes(x = city, y = avg_AQI)) +
+  geom_col(fill = "red") +
   labs(
-    title = "Historical AQI and 1-Year Forecast",
-    x     = "Date",
-    y     = "AQI"
+    title = "Average Air Quality Index by City",
+    x     = "City",
+    y     = "Average AQI"
   ) +
-  scale_x_date(date_labels="%b\n%Y", breaks="3 months") +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text  = element_text(size = 12)
+  )
+
+# Display the bar chart
+print(plot_avg_aqi_bar)
+
+# -------------------------------
+# 4. Deploying Final Visualization
+# -------------------------------
+# Save the bar chart to file
+# ggsave("Average_AQI_by_city.png", plot_avg_aqi_bar, width = 10, height = 6, dpi = 300)
